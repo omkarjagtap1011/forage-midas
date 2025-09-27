@@ -43,3 +43,7 @@ datasource:
 logging:
   level:
     com.jpmc.midascore.kafka: DEBUG
+
+incentive:
+  api:
+    base-url: http://localhost:8080
