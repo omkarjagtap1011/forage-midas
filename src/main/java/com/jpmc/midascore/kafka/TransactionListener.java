@@ -8,6 +8,7 @@ import org.springframework.kafka.annotation.KafkaListener;
 import org.springframework.kafka.support.KafkaHeaders;
 import org.springframework.messaging.handler.annotation.Header;
 import org.springframework.stereotype.Component;
+import com.jpmc.midascore.component.DatabaseConduit;
 
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -24,19 +25,28 @@ public class TransactionListener {
     // Logs Received Info
     private final List<Transaction> received = new CopyOnWriteArrayList<>();
 
+    // Database Conduit
+    private final DatabaseConduit databaseConduit;
+
     // Configuring Topic Name from yml
     @Value("${midas.kafka.topic.transactions}")
     private String topic;
 
-    @KafkaListener(topics = "${midas.kafka.topic.transactions}")
+    public TransactionListener(DatabaseConduit databaseConduit) {
+        this.databaseConduit = databaseConduit;
+    }
+
+    @KafkaListener(topics = "${midas.kafka.topic.transactions}", groupId = "${spring.application.name:midas-core}")
     public void onMessage(
-            Transaction tx,
-            @Header(KafkaHeaders.OFFSET) long offset,
-            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition
+            Transaction tx
+//            @Header(KafkaHeaders.OFFSET) long offset,
+//            @Header(KafkaHeaders.RECEIVED_PARTITION) int partition
     ) {
-        received.add(tx);
-        // Logging only
-        log.debug("Received tx on topic='{}' partition={} offset={}: {}", topic, partition, offset, tx);
+
+        databaseConduit.validateAndRecord(tx);
+//        received.add(tx);
+//        // Logging only
+//        log.debug("Received tx on topic='{}' partition={} offset={}: {}", topic, partition, offset, tx);
     }
 
     /** Exposed for tests/debugger to read the collected transactions. */
